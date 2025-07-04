@@ -22,7 +22,7 @@ load_dotenv()
 # 모듈 import
 from main_crawler import crawl_all_parallel
 from db import init_supabase, load_articles_from_db, save_cluster_to_db, save_cluster_articles_to_db, save_analysis_session_to_db
-from analyzer import cluster_articles, analyze_cluster_topics, analyze_media_bias, generate_report
+from analyzer import cluster_articles, analyze_cluster_topics, analyze_media_bias, generate_report, calculate_all_clusters_bias
 from utils import save_markdown_report
 
 class BlindSpotPipeline:
@@ -191,9 +191,13 @@ class BlindSpotPipeline:
         return all_results
     
     def save_analysis_results_to_db(self, clustered_articles, cluster_topics, bias_analysis, category=None):
-        """분석 결과를 데이터베이스에 저장 (카테고리 포함)"""
+        """분석 결과를 데이터베이스에 저장 (편향성 정보 포함)"""
         try:
             print("📊 클러스터 정보 저장 중...")
+            
+            # 클러스터별 편향성 계산
+            cluster_bias_analysis = calculate_all_clusters_bias(clustered_articles)
+            
             # 클러스터별 기사 리스트로 변환
             clusters_dict = {}
             for article in clustered_articles:
@@ -201,29 +205,35 @@ class BlindSpotPipeline:
                 if cid not in clusters_dict:
                     clusters_dict[cid] = []
                 clusters_dict[cid].append(article)
+                
             for cluster_id, articles_in_cluster in clusters_dict.items():
                 cluster_info = cluster_topics.get(cluster_id, {})
                 # summary만 체크
                 if not cluster_info.get('summary'):
                     print(f"❌ 파싱 실패: cluster_id={cluster_id}, summary='{cluster_info.get('summary')}'")
                     continue
+                
+                # 편향성 정보 가져오기
+                bias_info = cluster_bias_analysis.get(cluster_id, {}).get('bias')
+                
                 cluster_data = {
                     'cluster_id': cluster_id,
                     'category': category,
                     'topic': cluster_info.get('topic', f'클러스터 {cluster_id}'),
                     'summary': cluster_info.get('summary', ''),
-                    'article_count': len(articles_in_cluster)
+                    'article_count': len(articles_in_cluster),
+                    'bias': bias_info  # 편향성 정보 추가
                 }
+                
                 print("저장 시도:", cluster_data)
-                print(f"클러스터 {cluster_id} 예시:", articles_in_cluster[:1])
-                print("타입:", type(articles_in_cluster))
                 save_cluster_to_db(self.supabase, cluster_data)
 
                 # 기사 ID 저장
                 article_ids = [a.get('id') for a in articles_in_cluster if a.get('id')]
                 if article_ids:
                     save_cluster_articles_to_db(self.supabase, cluster_id, article_ids)
-            print(f"✅ [{category}] 클러스터 DB 저장 완료!")
+                    
+            print(f"✅ [{category}] 클러스터 및 편향성 정보 DB 저장 완료!")
             return True
         except Exception as e:
             print(f"❌ 분석 결과 DB 저장 실패: {e}")

@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import openai
 from db import init_supabase, load_articles_from_db, save_cluster_to_db, save_cluster_articles_to_db, save_analysis_session_to_db
-from analyzer import cluster_articles, analyze_cluster_topics
+from analyzer import cluster_articles, analyze_cluster_topics, calculate_all_clusters_bias
 from datetime import datetime
 from collections import Counter, defaultdict
 from utils import save_markdown_report
@@ -80,6 +80,10 @@ for category, articles_in_cat in articles_by_category.items():
         print(f"    - topic_analysis: {cluster_info.get('topic_analysis', '')[:50]}...")
         print(f"    - summary: '{cluster_info.get('summary', '')}'")
         print(f"    - keywords: {cluster_info.get('keywords', [])}")
+    
+    # 편향성 계산
+    cluster_bias_analysis = calculate_all_clusters_bias(clustered_articles)
+    
     for cluster_id, articles_in_cluster in clusters_dict.items():
         unique_cluster_id = f"{category}_{cluster_id}"
         print(f"[DB 저장 시도] category={category}, cluster_id={unique_cluster_id}, article_count={len(articles_in_cluster)}")
@@ -87,12 +91,16 @@ for category, articles_in_cat in articles_by_category.items():
         if not cluster_info.get('summary'):
             print(f"❌ 파싱 실패: cluster_id={unique_cluster_id}, summary='{cluster_info.get('summary')}'")
             continue
+        # 편향성 정보 가져오기
+        bias_info = cluster_bias_analysis.get(cluster_id, {}).get('bias')
+        
         cluster_data = {
             'cluster_id': unique_cluster_id,
             'category': category,
             'topic': cluster_info.get('topic_analysis', f'클러스터 {cluster_id}'),
             'summary': cluster_info.get('summary', ''),
-            'article_count': len(articles_in_cluster)
+            'article_count': len(articles_in_cluster),
+            'bias': bias_info  # 편향성 정보 추가
         }
         print(f"🔍 [디버깅] 최종 cluster_data:")
         print(f"  - cluster_id: {cluster_data['cluster_id']}")

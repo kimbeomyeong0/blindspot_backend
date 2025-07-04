@@ -71,7 +71,7 @@ def save_article_to_db(supabase, article_data=None, **kwargs):
         return False
 
 def save_cluster_to_db(supabase, cluster_data):
-    """클러스터 분석 결과를 Supabase에 저장"""
+    """클러스터 분석 결과를 Supabase에 저장 (bias 정보 포함)"""
     try:
         if not cluster_data:
             print("[경고] cluster_data가 None입니다. 저장을 건너뜁니다.")
@@ -81,23 +81,36 @@ def save_cluster_to_db(supabase, cluster_data):
         summary = cluster_data.get('summary')
         article_count = cluster_data.get('article_count', 0)
         category = cluster_data.get('category')
+        bias_info = cluster_data.get('bias')  # 새로운 bias 정보
+        
         print(f"[DB 저장 함수 진입] category={category}, cluster_id={cluster_id}, topic={topic}, article_count={article_count}")
+        if bias_info:
+            print(f"[bias 정보] {bias_info}")
+        
         # 필수 데이터 확인
         if cluster_id is None or not topic:
             print(f"❌ 클러스터 데이터 누락: cluster_id={cluster_id}, topic={bool(topic)}")
             return False
+        
         # 중복 클러스터 체크 (같은 cluster_id가 있는지)
         existing = supabase.table('clusters').select("id").eq('cluster_id', cluster_id).execute()
+        
+        # DB에 저장할 데이터 준비
+        db_data = {
+            "cluster_id": cluster_id,
+            "category": category,
+            "topic": topic,
+            "summary": summary,
+            "article_count": article_count,
+        }
+        
+        # bias 정보가 있으면 추가
+        if bias_info and isinstance(bias_info, dict):
+            db_data["bias"] = bias_info
+        
         if existing.data and isinstance(existing.data, list) and existing.data:
             print(f"⚠️ 이미 존재하는 클러스터 (업데이트): cluster_id={cluster_id}")
-            db_data = {
-                "cluster_id": cluster_id,
-                "category": category,
-                "topic": topic,
-                "summary": summary,
-                "article_count": article_count,
-                "updated_at": "NOW()"
-            }
+            db_data["updated_at"] = "NOW()"
             try:
                 response = supabase.table('clusters').update(db_data).eq('cluster_id', cluster_id).execute()
                 print(f"[DB 저장 성공] category={category}, cluster_id={cluster_id}")
@@ -105,28 +118,23 @@ def save_cluster_to_db(supabase, cluster_data):
                 print(f"[DB 저장 실패] category={category}, cluster_id={cluster_id}, error={e}")
                 raise
         else:
-            db_data = {
-                "cluster_id": cluster_id,
-                "category": category,
-                "topic": topic,
-                "summary": summary,
-                "article_count": article_count,
-                "created_at": "NOW()",
-                "updated_at": "NOW()"
-            }
+            db_data["created_at"] = "NOW()"
+            db_data["updated_at"] = "NOW()"
             try:
                 response = supabase.table('clusters').insert(db_data).execute()
                 print(f"[DB 저장 성공] category={category}, cluster_id={cluster_id}")
             except Exception as e:
                 print(f"[DB 저장 실패] category={category}, cluster_id={cluster_id}, error={e}")
                 raise
+        
         print(f"🔍 [디버깅] DB 저장 데이터:")
         print(f"  - db_data: {db_data}")
+        
         if response is not None and hasattr(response, 'data') and response.data:
             topic_str = str(topic)[:30] if topic else ''
-            summary_str = str(summary) if summary else ''
             print(f"✅ 클러스터 저장 성공: cluster_id={cluster_id}, topic={topic_str}...")
-            print(f"🔍 [디버깅] 저장된 summary: '{summary_str}'")
+            if bias_info:
+                print(f"   bias 정보: 좌={bias_info.get('left', 0)}%, 중={bias_info.get('center', 0)}%, 우={bias_info.get('right', 0)}%")
             return True
         else:
             print(f"❌ 클러스터 저장 실패: {response}")
