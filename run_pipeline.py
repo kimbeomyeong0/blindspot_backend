@@ -21,9 +21,9 @@ load_dotenv()
 
 # 모듈 import
 from main_crawler import crawl_all_parallel
-from supabase_utils import init_supabase, load_articles_from_db, save_cluster_to_db, save_cluster_articles_to_db, save_analysis_session_to_db
+from db import init_supabase, load_articles_from_db, save_cluster_to_db, save_cluster_articles_to_db, save_analysis_session_to_db
 from analyzer import cluster_articles, analyze_cluster_topics, analyze_media_bias, generate_report
-from report_utils import save_markdown_report
+from utils import save_markdown_report
 
 class BlindSpotPipeline:
     def __init__(self, openai_api_key):

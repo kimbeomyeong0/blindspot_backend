@@ -1,11 +1,11 @@
 import os
 from dotenv import load_dotenv
 import openai
-from supabase_utils import init_supabase, load_articles_from_db, save_cluster_to_db, save_cluster_articles_to_db, save_analysis_session_to_db
+from db import init_supabase, load_articles_from_db, save_cluster_to_db, save_cluster_articles_to_db, save_analysis_session_to_db
 from analyzer import cluster_articles, analyze_cluster_topics
 from datetime import datetime
 from collections import Counter, defaultdict
-from report_utils import save_markdown_report
+from utils import save_markdown_report
 
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")

@@ -7,7 +7,7 @@ import traceback
 
 # 상위 디렉토리의 supabase 모듈 import
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from supabase_utils import save_article_to_db, init_supabase
+from db import save_article_to_db, init_supabase
 
 def crawl_kbs():
     # Supabase 초기화

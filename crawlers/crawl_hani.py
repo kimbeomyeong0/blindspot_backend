@@ -7,7 +7,7 @@ import traceback
 
 # 상위 디렉토리의 supabase 모듈 import
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from supabase_utils import get_supabase_client, save_article_to_db
+from db import get_supabase_client, save_article_to_db
 
 def crawl_hani():
     # 한겨레 카테고리별 URL
