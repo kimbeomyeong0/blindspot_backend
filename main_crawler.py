@@ -1,10 +1,10 @@
 import threading
 import time
 from datetime import datetime
-from crawlers.hani_crawler import crawl_hani
-from crawlers.kbs_crawler import crawl_kbs
-from crawlers.ytn_crawler import crawl_ytn
-from crawlers.chosun_crawler import crawl_chosun
+from crawlers.crawl_hani import crawl_hani
+from crawlers.crawl_kbs import crawl_kbs
+from crawlers.crawl_ytn import crawl_ytn
+from crawlers.crawl_chosun import crawl_chosun
 
 def run_crawler_with_timer(crawler_func, crawler_name):
     """개별 크롤러를 실행하고 시간을 측정"""

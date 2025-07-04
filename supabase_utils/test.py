@@ -1,14 +1,13 @@
-from supabase import create_client, Client
-
-# Supabase 연결 정보
-SUPABASE_URL = "https://grcvxnnkfpewzejifesu.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyY3Z4bm5rZnBld3plamlmZXN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTQ3MTQ2MSwiZXhwIjoyMDY3MDQ3NDYxfQ.PHWwtDU5xr-QkM_R3oGWu-Cmyseiv253SwJw8rcN7ug"
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+from client import init_supabase
 
 def test_supabase_connection():
     """Supabase 연결 테스트"""
     try:
         # Supabase 클라이언트 생성
-        supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        supabase = init_supabase()
         
         print("🔗 Supabase 연결 성공!")
         
